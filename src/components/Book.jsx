@@ -24,6 +24,8 @@ const easingFactorFold = 0.6; // Controls the speed of the easing
 const insideCurveStrength = 0.18; // Controls the strength of the curve
 const outsideCurveStrength = 0.05; // Controls the strength of the curve
 const turningCurveStrength = 0.09; // Controls the strength of the curve
+const TURN_ANIMATION_DURATION = 400; // ms - controls the page-turn curve/fold animation
+const NARRATION_DELAY = 700; // ms - waits a bit longer than the flip so narration starts after the page fully settles
 
 const PAGE_WIDTH = 1.28;
 const PAGE_HEIGHT = 1.71; // 4:3 aspect ratio
@@ -179,7 +181,9 @@ const Page = ({ number, front, back, page, opened, bookClosed, ...props }) => {
       turnedAt.current = +new Date();
       lastOpened.current = opened;
     }
-    let turningTime = Math.min(400, new Date() - turnedAt.current) / 400;
+    let turningTime =
+      Math.min(TURN_ANIMATION_DURATION, new Date() - turnedAt.current) /
+      TURN_ANIMATION_DURATION;
     turningTime = Math.sin(turningTime * Math.PI);
 
     let targetRotation = opened ? -Math.PI / 2 : Math.PI / 2;
@@ -265,6 +269,44 @@ const Page = ({ number, front, back, page, opened, bookClosed, ...props }) => {
 export const Book = ({ ...props }) => {
   const [page] = useAtom(pageAtom);
   const [delayedPage, setDelayedPage] = useState(page);
+
+  const narrationAudioRef = useRef(null);
+  const narrationTimeoutRef = useRef(null);
+
+  const stopNarration = () => {
+    if (narrationTimeoutRef.current) {
+      clearTimeout(narrationTimeoutRef.current);
+      narrationTimeoutRef.current = null;
+    }
+    if (narrationAudioRef.current) {
+      narrationAudioRef.current.pause();
+      narrationAudioRef.current = null;
+    }
+  };
+
+  // Cut off any playing narration the instant a new target page is chosen
+  useEffect(() => {
+    stopNarration();
+  }, [page]);
+
+  // Once delayedPage has caught up to the target page, wait for the page to
+  // fully settle, then play that page's narration
+  useEffect(() => {
+    if (delayedPage !== page) return; // still en route to the target
+
+    const isContentPage = page >= 1 && page <= pages.length - 1;
+    if (!isContentPage) return; // no narration for cover / back cover
+
+    narrationTimeoutRef.current = setTimeout(() => {
+      const audio = new Audio(`/audios/page-${page}.mp3`);
+      narrationAudioRef.current = audio;
+      audio.play();
+    }, NARRATION_DELAY);
+
+    return () => clearTimeout(narrationTimeoutRef.current);
+  }, [delayedPage, page]);
+
+  useEffect(() => stopNarration, []); // cleanup on unmount
 
   useEffect(() => {
     let timeout;
