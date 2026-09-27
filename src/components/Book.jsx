@@ -25,7 +25,7 @@ const insideCurveStrength = 0.18; // Controls the strength of the curve
 const outsideCurveStrength = 0.05; // Controls the strength of the curve
 const turningCurveStrength = 0.09; // Controls the strength of the curve
 const TURN_ANIMATION_DURATION = 400; // ms - controls the page-turn curve/fold animation
-const NARRATION_DELAY = 700; // ms - waits a bit longer than the flip so narration starts after the page fully settles
+const NARRATION_DELAY = 1600; // ms - waits a bit longer than the flip so narration starts after the page fully settles
 
 const PAGE_WIDTH = 1.28;
 const PAGE_HEIGHT = 1.71; // 4:3 aspect ratio
